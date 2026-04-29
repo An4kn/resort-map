@@ -11,7 +11,7 @@ describe("tile-mapping", () => {
   });
 
   it("should return undefined for unknown characters", () => {
-    // @ts-expect-error Sprawdzamy zachowanie w przypadku podania błędnych danych
+    // @ts-expect-error
     expect(tileImage("X")).toBeUndefined();
   });
 });

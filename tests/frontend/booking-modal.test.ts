@@ -61,7 +61,7 @@ describe("booking-modal", () => {
 
     vi.advanceTimersByTime(1500);
     expect(onSuccess).toHaveBeenCalled();
-    expect(root.innerHTML).toBe(""); // Modal powinien zostać usunięty z drzewa DOM
+    expect(root.innerHTML).toBe("");
   });
 
   it("should close modal when Cancel button is clicked", () => {
@@ -72,6 +72,6 @@ describe("booking-modal", () => {
     cancelBtn.click();
     
     expect(onClose).toHaveBeenCalled();
-    expect(root.innerHTML).toBe(""); // Modal usunięty z DOM
+    expect(root.innerHTML).toBe("");
   });
 });
