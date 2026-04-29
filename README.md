@@ -1,63 +1,122 @@
-# Resort Map — Code Test
+# Resort Map
 
-*You are creating the world's first interactive cabana booking website for luxury resorts. Our goal is to offer guests a seamless digital experience: browse an interactive map of the resort, see poolside cabanas availability in real time, and book their ideal lounging spot just steps from the pool—all with just a couple of clicks. This project integrates a visually-rich resort map with live cabana availability and booking, redefining poolside convenience for our guests. Map format and asset usage are described below.*
+Interactive cabana booking webapp for a luxury resort. Backend serves a REST API; frontend renders the resort map and lets guests book available cabanas.
 
----
+The original task brief is preserved in [`task.md`](./task.md).
 
-## Task
+## Requirements
 
-Build a webapp that displays the resort map and allows guests to book cabanas. The frontend should rely entirely on a RESTful API for all data.
+- Node.js 20 or newer
+- npm
 
-- **Backend:** Provides a RESTful API that serves all information needed to display the interactive, bookable resort map and to handle cabana bookings.
-- **Frontend:** Provides an interactive resort map and enables cabana booking.
+## Run
 
-  - **Resort Map View:**
-    - Displays a visual map of the resort using tiles from `assets`.
-    - Map layout and cabana availability are rendered based on the API response.
-    - Legend:
-      - `W` = cabana
-      - `p` = pool
-      - `#` = path
-      - `c` = chalet
-      - `.` = empty space
+```bash
+./run.sh
+```
 
-  - **Cabana Interaction:**
-    - When a guest clicks on a cabana (`W`):
-      - If the cabana is **available**, show a booking interface (1-step flow: prompt for room number and guest name). Show confirmation of booking and redirect back to map view.
-      - If the cabana is **unavailable**, display information that it's not available.
+Then open <http://localhost:8080>.
 
-  - **Booking Feedback:**
-    - Once a cabana is booked, update the map immediately to show that it is no longer available (e.g., use a distinct visual style for booked cabanas).
+`run.sh` installs dependencies (if needed), builds the frontend and backend, and starts the server. Subsequent runs reuse the existing build — delete `dist/` and `public/` to force a rebuild.
 
-  - **Validation:** Booking is only allowed if room number and name match a current guest (validated via API using the bookings file).
+### CLI options
 
-The backend reads map layout and booking/guest data from files specified via CLI options: `--map <path-to-map>` (for the ASCII resort map; defaults to `map.ascii` in the working directory) and `--bookings <path-to-bookings>` (for bookings and guest information; defaults to `bookings.json` in the working directory).
-Be sure to use the provided example map (`map.ascii`) and bookings (`bookings.json`) files as the required format for your input files.
+```bash
+./run.sh --map ./map.ascii --bookings ./bookings.json --port 8080
+```
 
-There is no need for persistent storage for cabana bookings—in-memory or session state on the backend is fine.
+| Flag         | Default          | Description                       |
+| ------------ | ---------------- | --------------------------------- |
+| `--map`      | `./map.ascii`    | Path to the ASCII resort map      |
+| `--bookings` | `./bookings.json`| Path to the guest whitelist (JSON)|
+| `--port`     | `8080`           | HTTP port                         |
 
-No auth—assume that knowing room number and guest name is sufficient auth.
+## Tests
 
-The booking flow should end with a clear confirmation and the map visibly updated (booked cabana distinct). Errors (e.g. invalid room/name) should show a short, human-readable message.
+```bash
+npm test
+```
 
----
+Vitest + Supertest cover:
 
-## Deliverables
+- map parsing and guest-list parsing (`tests/backend/loaders.test.ts`)
+- booking logic as pure functions (`tests/backend/store.test.ts`)
+- HTTP-level integration of `GET /api/map` and `POST /api/bookings` including all error codes (`tests/backend/api.test.ts`)
 
-- **Source code** in a git repository (please provide a link and make sure we have permissions to view/download code).
-- **README:** Please ensure your README is well-structured, concise, and clearly documents how to run and use your app.
-Readme should containt a short paragraph explaining your core design decisions and any trade-offs (e.g. why you structured the API/UI as you did, what you kept simple or skipped).
-- **Single entrypoint:** Provide a **single command** (e.g. `./run.sh`, `npm run start`, or `dotnet run`) that launches both backend and frontend together, so reviewers need only run one command from the project root. This starting command **must accept** the `--map <path>` and `--bookings <path>` arguments so reviewers can specify alternative map or bookings files at startup.
-- **AI-assisted workflow documentation:** Please include your AI workflow in `AI.md`. Which tools you used, what kind of prompts and how many steps it took. This will not be judged, but a topic we would like to discuss during the interview.
-- **Screenshot:** Please include a screenshot (in your repository, e.g., `screenshot.png`) showing your running solution (map view).
-- **Automated Tests:** Include automated tests covering core backend and frontend functionality. Tests should validate booking logic, REST API behavior, map updates, and UI responses to typical user actions. Document how to run all tests in the README.
-- **LLM use:** If you use an LLM or coding agent (which we encourage), include the key prompts or agent setup you used. We may ask detailed questions about both the solution and how you used the tooling.
+A frontend test stub lives in `tests/frontend/` for future iterations.
 
----
+## REST API
 
-## General notes
+### `GET /api/map`
 
-- **Languages:** Use **.NET and/or JavaScript/TypeScript** only. Other languages are not in scope.
-- Keep it simple; avoid over-engineering. Within that stack, any reasonable libraries or frameworks are fine as long as they are documented.
-- No real auth or persistent storage required—in-memory/session state for cabana bookings is enough.
-- When in doubt, assume we had a simple solution in mind; feel free to ask questions.
+Returns the map plus availability for every cabana.
+
+```json
+{
+  "width": 20,
+  "height": 19,
+  "tiles": [[".", ".", "c", "..."], ["...", "...", "..."]],
+  "cabanas": [
+    { "id": "W-3-11", "x": 3, "y": 11, "available": true },
+    { "id": "W-4-11", "x": 4, "y": 11, "available": false }
+  ]
+}
+```
+
+`tiles` is indexed `[y][x]`. `cabanas` is sorted top-to-bottom, left-to-right.
+
+### `POST /api/bookings`
+
+```json
+{ "cabanaId": "W-3-11", "roomNumber": "101", "guestName": "Alice Smith" }
+```
+
+| Status | Meaning                                                     |
+| ------ | ----------------------------------------------------------- |
+| 200    | Booked. Body: `{ "success": true, "cabanaId": "W-3-11" }`   |
+| 400    | Missing or wrong-typed body fields                          |
+| 401    | `(roomNumber, guestName)` does not match any guest entry    |
+| 404    | `cabanaId` does not refer to a `W` tile on the map          |
+| 409    | Cabana is already booked                                    |
+
+Errors share the shape `{ "success": false, "error": "<short message>" }`.
+
+## Project layout
+
+```
+server/    Express app, in-memory store, parsers, route handlers
+client/    Vanilla TS frontend (Vite-bundled into public/)
+assets/    PNG tiles served at /assets/* (read-only input)
+tests/     Vitest unit and integration tests
+map.ascii  Sample resort map (read-only input)
+bookings.json  Guest whitelist (read-only input)
+```
+
+## Design decisions
+
+**Vanilla TS, no framework.** The UI is a 20×19 grid with a modal — that's a few hundred lines of DOM code, not a framework's worth. Direct `document.createElement` keeps every line auditable; React would be more code, not less.
+
+**In-memory state, no persistence.** The brief explicitly allows it. Bookings live in a `Map<string, ...>` inside `server/store.ts` and are wiped on restart. Adding SQLite or a file-write would be ceremony for a feature the brief explicitly opts out of.
+
+**No ETag / optimistic concurrency.** Node executes JS single-threaded, so the existence check and the `Map.set` inside the POST handler happen atomically. Two concurrent bookings for the same cabana cannot both succeed: one writes, the next sees the entry and returns 409. ETags would add a round-trip and a header for a guarantee Node already provides.
+
+**Pure functions for business logic.** `bookCabana`, `parseMap`, and `parseGuests` take plain inputs and return plain values — no Express, no `fs`. The route handler is thin: parse the body, call the function, map the result to a status code. Same functions are exercised both by integration tests (through Express) and by unit tests (directly).
+
+**One asset for all paths.** The `#` tile uses `arrowStraight.png` everywhere instead of inspecting neighbours to decide between corner / straight / split tiles. The brief says "keep it simple"; a path-tile autotiler is a side quest.
+
+**Single port, one process.** The Express app serves the API, the Vite-built frontend (`public/`), and the static PNG assets (`/assets/*`). The reviewer runs one command and opens one URL.
+
+**`bookings.json` is a guest whitelist, not a list of bookings.** The filename is misleading: each entry is `{ room, guestName }` with no cabana reference. We treat it read-only and never write back.
+
+**No per-room booking limit.** The brief doesn't specify one, so a guest who matches the whitelist can book several cabanas in one session.
+
+**Tests stay focused on business logic.** The brief asks for "automated tests covering core backend and frontend functionality"; we cover the booking rules and the HTTP surface. Frontend tests are scoped out of this iteration (the UI is thin DOM glue around the API and is easier to validate by hand).
+
+## What's intentionally not here
+
+- Authentication (room + name is the whole credential, per the brief)
+- Database, ORM, migrations
+- Docker, docker-compose
+- Path-tile autotiling (corners / T-junctions detected from neighbours)
+- Frontend tests
+- Validation libraries (Zod, Joi) — manual checks at the HTTP boundary suffice for three string fields
