@@ -7,11 +7,17 @@ It will be filled in with:
 - the key prompts that drove the implementation
 - a rough step count and what was iterated on
 
-Tooling / Setup: Claude (for planning and prompt engineering) and a Claude-based coding agent (for execution).
 
-Workflow: I used a two-step approach. First, I interacted with Claude to outline the project requirements and iteratively develop a comprehensive "master prompt". Once the instructions were highly specific and optimized, I fed this master prompt into the Claude coding agent to handle the actual code generation and implementation.
+### Workflow & Step Count
+I used a deliberate, heavy-upfront-planning approach rather than conversational trial-and-error:
 
-# Master Prompt:
+1. **Phase 1: Prompt Engineering (Iterative).** I spent my time interacting with Claude to outline the project requirements and iteratively develop a comprehensive "master prompt". 
+2. **Phase 2: Execution (1 Step).** Once the instructions were highly specific and optimized, I fed this master prompt into the Claude coding agent. Because the prompt defined the exact architecture, constraints, and business rules, the agent generated the entire working application in essentially **one massive zero-shot step**.
+
+### Iterations & Bug Fixing
+While the master prompt successfully generated the core application and architecture in one go, a few follow-up prompts were necessary to resolve minor frontend bugs. Specifically, there was an issue with displaying multiple pieces of information simultaneously in the UI, such as the notification behavior when a user clicked on a cabana that was already booked (unavailable). I provided direct feedback to the agent about these display issues, and it patched the frontend logic accordingly.
+
+# The Master Prompt
 
 ### Project Context
 
