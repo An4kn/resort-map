@@ -12,10 +12,8 @@ The original task brief is preserved in [`task.md`](./task.md).
 ## Run
 
 ```bash
-./run.sh
+./run.sh [--map <path>] [--bookings <path>] [--port <number>]
 ```
-
-Then open <http://localhost:8080>.
 
 `run.sh` installs dependencies (if needed), builds the frontend and backend, and starts the server. Subsequent runs reuse the existing build — delete `dist/` and `public/` to force a rebuild.
 
@@ -39,11 +37,15 @@ npm test
 
 Vitest + Supertest cover:
 
+**Backend:**
 - map parsing and guest-list parsing (`tests/backend/loaders.test.ts`)
 - booking logic as pure functions (`tests/backend/store.test.ts`)
 - HTTP-level integration of `GET /api/map` and `POST /api/bookings` including all error codes (`tests/backend/api.test.ts`)
 
-A frontend test stub lives in `tests/frontend/` for future iterations.
+**Frontend:**
+- API client functions with mocked fetch (`tests/frontend/api.test.ts`)
+- tile character to asset path mapping (`tests/frontend/tile-mapping.test.ts`)
+- booking modal UI interactions and DOM rendering using jsdom (`tests/frontend/booking-modal.test.ts`)
 
 ## REST API
 
@@ -110,7 +112,7 @@ bookings.json  Guest whitelist (read-only input)
 
 **No per-room booking limit.** The brief doesn't specify one, so a guest who matches the whitelist can book several cabanas in one session.
 
-**Tests stay focused on business logic.** The brief asks for "automated tests covering core backend and frontend functionality"; we cover the booking rules and the HTTP surface. Frontend tests are scoped out of this iteration (the UI is thin DOM glue around the API and is easier to validate by hand).
+**Tests stay focused on business logic and core UI.** The brief asks for "automated tests covering core backend and frontend functionality"; we cover the booking rules, HTTP surface, API client, and modal UI interactions using jsdom.
 
 ## What's intentionally not here
 
@@ -118,5 +120,4 @@ bookings.json  Guest whitelist (read-only input)
 - Database, ORM, migrations
 - Docker, docker-compose
 - Path-tile autotiling (corners / T-junctions detected from neighbours)
-- Frontend tests
 - Validation libraries (Zod, Joi) — manual checks at the HTTP boundary suffice for three string fields
